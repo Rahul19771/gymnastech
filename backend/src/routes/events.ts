@@ -29,12 +29,18 @@ router.get('/:id', authenticate, async (req, res) => {
   try {
     const { id } = req.params;
     
+    // Validate that id is a valid integer
+    const eventId = parseInt(id);
+    if (isNaN(eventId)) {
+      return res.status(400).json({ error: 'Invalid event ID' });
+    }
+    
     const result = await pool.query(
       `SELECT e.*, u.first_name || ' ' || u.last_name as created_by_name
        FROM events e
        LEFT JOIN users u ON e.created_by = u.id
        WHERE e.id = $1`,
-      [id]
+      [eventId]
     );
     
     if (result.rows.length === 0) {
@@ -111,10 +117,17 @@ router.put(
   async (req: AuthRequest, res) => {
     try {
       const { id } = req.params;
+      
+      // Validate that id is a valid integer
+      const eventId = parseInt(id);
+      if (isNaN(eventId)) {
+        return res.status(400).json({ error: 'Invalid event ID' });
+      }
+      
       const { name, description, event_date, start_time, location, status, config } = req.body;
       
       // Get old data for audit
-      const oldDataResult = await pool.query('SELECT * FROM events WHERE id = $1', [id]);
+      const oldDataResult = await pool.query('SELECT * FROM events WHERE id = $1', [eventId]);
       if (oldDataResult.rows.length === 0) {
         return res.status(404).json({ error: 'Event not found' });
       }
@@ -131,7 +144,7 @@ router.put(
              updated_at = NOW()
          WHERE id = $8
          RETURNING *`,
-        [name, description, event_date, start_time, location, status, config ? JSON.stringify(config) : null, id]
+        [name, description, event_date, start_time, location, status, config ? JSON.stringify(config) : null, eventId]
       );
       
       const event = result.rows[0];
@@ -141,7 +154,7 @@ router.put(
         user_id: req.user!.id,
         action: 'update',
         entity_type: 'event',
-        entity_id: parseInt(id),
+        entity_id: eventId,
         old_data: oldDataResult.rows[0],
         new_data: event,
         ip_address: req.ip
@@ -160,6 +173,12 @@ router.get('/:id/athletes', authenticate, async (req, res) => {
   try {
     const { id } = req.params;
     
+    // Validate that id is a valid integer
+    const eventId = parseInt(id);
+    if (isNaN(eventId)) {
+      return res.status(400).json({ error: 'Invalid event ID' });
+    }
+    
     const result = await pool.query(
       `SELECT 
         ea.*,
@@ -172,7 +191,7 @@ router.get('/:id/athletes', authenticate, async (req, res) => {
        INNER JOIN athletes a ON ea.athlete_id = a.id
        WHERE ea.event_id = $1
        ORDER BY a.last_name, a.first_name`,
-      [id]
+      [eventId]
     );
     
     res.json({ athletes: result.rows });
@@ -199,6 +218,13 @@ router.post(
     
     try {
       const { id } = req.params;
+      
+      // Validate that id is a valid integer
+      const eventId = parseInt(id);
+      if (isNaN(eventId)) {
+        return res.status(400).json({ error: 'Invalid event ID' });
+      }
+      
       const { athlete_id, apparatus_ids } = req.body;
       
       const result = await pool.query(
@@ -207,7 +233,7 @@ router.post(
          ON CONFLICT (event_id, athlete_id) DO UPDATE
          SET apparatus_ids = EXCLUDED.apparatus_ids
          RETURNING *`,
-        [id, athlete_id, apparatus_ids]
+        [eventId, athlete_id, apparatus_ids]
       );
       
       res.status(201).json({ registration: result.rows[0] });

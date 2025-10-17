@@ -18,7 +18,11 @@ export const EventDetail: React.FC = () => {
   
   const loadEvent = async () => {
     try {
-      const { data } = await eventsAPI.getById(parseInt(id!));
+      const eventId = parseInt(id!);
+      if (isNaN(eventId)) {
+        throw new Error('Invalid event ID');
+      }
+      const { data } = await eventsAPI.getById(eventId);
       setEvent(data.event);
     } catch (error) {
       console.error('Failed to load event:', error);

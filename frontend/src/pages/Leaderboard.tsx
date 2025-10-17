@@ -18,7 +18,10 @@ export const Leaderboard: React.FC = () => {
     if (eventId) {
       loadData();
       socketService.connect();
-      socketService.joinEvent(parseInt(eventId));
+      const eventIdNum = parseInt(eventId);
+      if (!isNaN(eventIdNum)) {
+        socketService.joinEvent(eventIdNum);
+      }
       
       socketService.onLeaderboardUpdate((data) => {
         if (!selectedApparatus || data.apparatusId === selectedApparatus) {
@@ -29,7 +32,10 @@ export const Leaderboard: React.FC = () => {
     
     return () => {
       if (eventId) {
-        socketService.leaveEvent(parseInt(eventId));
+        const eventIdNum = parseInt(eventId);
+        if (!isNaN(eventIdNum)) {
+          socketService.leaveEvent(eventIdNum);
+        }
       }
     };
   }, [eventId]);
@@ -42,8 +48,13 @@ export const Leaderboard: React.FC = () => {
   
   const loadData = async () => {
     try {
+      const eventIdNum = parseInt(eventId!);
+      if (isNaN(eventIdNum)) {
+        throw new Error('Invalid event ID');
+      }
+      
       const [eventRes, apparatusRes] = await Promise.all([
-        eventsAPI.getById(parseInt(eventId!)),
+        eventsAPI.getById(eventIdNum),
         apparatusAPI.getAll('womens_artistic')
       ]);
       
@@ -64,7 +75,12 @@ export const Leaderboard: React.FC = () => {
     if (!eventId || !selectedApparatus) return;
     
     try {
-      const { data } = await scoringAPI.getLeaderboard(parseInt(eventId), selectedApparatus);
+      const eventIdNum = parseInt(eventId);
+      if (isNaN(eventIdNum)) {
+        throw new Error('Invalid event ID');
+      }
+      
+      const { data } = await scoringAPI.getLeaderboard(eventIdNum, selectedApparatus);
       setLeaderboard(data.leaderboard);
     } catch (error) {
       console.error('Failed to load leaderboard:', error);

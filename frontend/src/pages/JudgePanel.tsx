@@ -47,8 +47,13 @@ export const JudgePanel: React.FC = () => {
   
   const loadData = async () => {
     try {
+      const eventIdNum = parseInt(eventId!);
+      if (isNaN(eventIdNum)) {
+        throw new Error('Invalid event ID');
+      }
+      
       const [eventRes, apparatusRes] = await Promise.all([
-        eventsAPI.getById(parseInt(eventId!)),
+        eventsAPI.getById(eventIdNum),
         apparatusAPI.getAll('womens_artistic')
       ]);
       
@@ -71,7 +76,12 @@ export const JudgePanel: React.FC = () => {
     if (!eventId || !selectedApparatus) return;
     
     try {
-      const { data } = await scoringAPI.getPerformances(parseInt(eventId), selectedApparatus);
+      const eventIdNum = parseInt(eventId);
+      if (isNaN(eventIdNum)) {
+        throw new Error('Invalid event ID');
+      }
+      
+      const { data } = await scoringAPI.getPerformances(eventIdNum, selectedApparatus);
       setPerformances(data.performances);
     } catch (error) {
       console.error('Failed to load performances:', error);

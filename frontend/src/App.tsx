@@ -7,6 +7,7 @@ import { Dashboard } from './pages/Dashboard';
 import { JudgePanel } from './pages/JudgePanel';
 import { Leaderboard } from './pages/Leaderboard';
 import { EventDetail } from './pages/EventDetail';
+import { EventForm } from './pages/EventForm';
 
 const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated } = useAuthStore();
@@ -42,6 +43,17 @@ function App() {
             <PrivateRoute>
               <Layout>
                 <Dashboard />
+              </Layout>
+            </PrivateRoute>
+          }
+        />
+        
+        <Route
+          path="/events/new"
+          element={
+            <PrivateRoute>
+              <Layout>
+                <EventForm />
               </Layout>
             </PrivateRoute>
           }
