@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { eventsAPI } from '../services/api';
-import type { Event } from '../types';
+// import type { Event } from '../types';
 import { Calendar, MapPin, Clock, Save, ArrowLeft } from 'lucide-react';
 
 export const EventForm: React.FC = () => {
@@ -49,7 +49,7 @@ export const EventForm: React.FC = () => {
           <ArrowLeft className="w-4 h-4" />
           <span>Back to Dashboard</span>
         </button>
-        
+
         <h1 className="text-3xl font-bold text-gray-900">Create New Event</h1>
         <p className="text-gray-600 mt-1">Set up a new gymnastics competition event</p>
       </div>

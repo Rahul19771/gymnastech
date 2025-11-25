@@ -1,3 +1,4 @@
+
 # GymnaTech Branding Guide
 
 ## Project Name

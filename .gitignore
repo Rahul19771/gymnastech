@@ -24,6 +24,7 @@ yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
 .pnpm-debug.log*
+.npm-cache/
 
 # OS files
 .DS_Store
@@ -43,6 +44,9 @@ coverage/
 # Misc
 *.tgz
 .npm
+.npm-cache
+.npm-cache/
+*/.npm-cache/
 .eslintcache
 .node_repl_history
 .yarn-integrity

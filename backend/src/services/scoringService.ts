@@ -40,7 +40,7 @@ export class ScoringService {
       finalDScore = this.averageDScores(dScores.map(s => parseFloat(s.score_value)));
     }
     
-    // Calculate E-score (drop high and low, then average)
+    // Calculate E-score (10.0 - average deduction)
     let finalEScore = 0;
     let eScoresDetail: EScoreCalculation = {
       scores: [],
@@ -50,8 +50,13 @@ export class ScoringService {
     
     if (eScores.length > 0) {
       const eScoreValues = eScores.map(s => parseFloat(s.score_value));
-      eScoresDetail = this.calculateEScore(eScoreValues);
-      finalEScore = eScoresDetail.average;
+      // In the new logic, these values are DEDUCTIONS
+      eScoresDetail = this.calculateAverageDeduction(eScoreValues);
+      
+      // E-Score = 10.0 - Average Deduction
+      // Ensure we don't go below 0
+      finalEScore = Math.max(0, 10.0 - eScoresDetail.average);
+      finalEScore = parseFloat(finalEScore.toFixed(3));
     }
     
     // Calculate neutral deductions (if any)
@@ -81,7 +86,7 @@ export class ScoringService {
         neutralDeductions.toFixed(3),
         finalScore.toFixed(3),
         JSON.stringify(eScoresDetail),
-        'drop_high_low'
+        'deduction_drop_high_low'
       ]
     );
     
@@ -89,39 +94,39 @@ export class ScoringService {
   }
   
   /**
-   * Calculate E-score by dropping highest and lowest, then averaging
+   * Calculate Average Deduction by dropping highest and lowest, then averaging
    */
-  private calculateEScore(scores: number[]): EScoreCalculation {
-    if (scores.length === 0) {
+  public calculateAverageDeduction(deductions: number[]): EScoreCalculation {
+    if (deductions.length === 0) {
       return { scores: [], averaged_scores: [], average: 0 };
     }
     
-    if (scores.length <= 2) {
+    if (deductions.length <= 2) {
       // If 2 or fewer scores, just average them (don't drop any)
-      const average = scores.reduce((sum, s) => sum + s, 0) / scores.length;
+      const average = deductions.reduce((sum, s) => sum + s, 0) / deductions.length;
       return {
-        scores: [...scores],
-        averaged_scores: [...scores],
+        scores: [...deductions],
+        averaged_scores: [...deductions],
         average: parseFloat(average.toFixed(3))
       };
     }
     
-    // Sort scores to find high and low
-    const sortedScores = [...scores].sort((a, b) => a - b);
-    const droppedLow = sortedScores[0];
-    const droppedHigh = sortedScores[sortedScores.length - 1];
+    // Sort deductions to find high and low
+    const sortedDeductions = [...deductions].sort((a, b) => a - b);
+    const droppedLow = sortedDeductions[0];
+    const droppedHigh = sortedDeductions[sortedDeductions.length - 1];
     
     // Remove highest and lowest
-    const middleScores = sortedScores.slice(1, -1);
+    const middleDeductions = sortedDeductions.slice(1, -1);
     
     // Calculate average
-    const average = middleScores.reduce((sum, s) => sum + s, 0) / middleScores.length;
+    const average = middleDeductions.reduce((sum, s) => sum + s, 0) / middleDeductions.length;
     
     return {
-      scores: [...scores],
+      scores: [...deductions],
       dropped_low: droppedLow,
       dropped_high: droppedHigh,
-      averaged_scores: middleScores,
+      averaged_scores: middleDeductions,
       average: parseFloat(average.toFixed(3))
     };
   }

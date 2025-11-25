@@ -8,6 +8,8 @@ import { JudgePanel } from './pages/JudgePanel';
 import { Leaderboard } from './pages/Leaderboard';
 import { EventDetail } from './pages/EventDetail';
 import { EventForm } from './pages/EventForm';
+import { Athletes } from './pages/Athletes';
+import { Configuration } from './pages/Configuration';
 
 const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated } = useAuthStore();
@@ -15,17 +17,17 @@ const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => 
 };
 
 function App() {
-  const { checkAuth, isAuthenticated } = useAuthStore();
-  
+  const { checkAuth } = useAuthStore();
+
   useEffect(() => {
     checkAuth();
   }, []);
-  
+
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<Login />} />
-        
+
         <Route
           path="/"
           element={
@@ -36,7 +38,7 @@ function App() {
             </PrivateRoute>
           }
         />
-        
+
         <Route
           path="/events"
           element={
@@ -47,7 +49,7 @@ function App() {
             </PrivateRoute>
           }
         />
-        
+
         <Route
           path="/events/new"
           element={
@@ -58,7 +60,7 @@ function App() {
             </PrivateRoute>
           }
         />
-        
+
         <Route
           path="/events/:id"
           element={
@@ -69,7 +71,7 @@ function App() {
             </PrivateRoute>
           }
         />
-        
+
         <Route
           path="/events/:eventId/judge"
           element={
@@ -80,7 +82,7 @@ function App() {
             </PrivateRoute>
           }
         />
-        
+
         <Route
           path="/events/:eventId/leaderboard"
           element={
@@ -91,7 +93,29 @@ function App() {
             </PrivateRoute>
           }
         />
-        
+
+        <Route
+          path="/athletes"
+          element={
+            <PrivateRoute>
+              <Layout>
+                <Athletes />
+              </Layout>
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/configuration"
+          element={
+            <PrivateRoute>
+              <Layout>
+                <Configuration />
+              </Layout>
+            </PrivateRoute>
+          }
+        />
+
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </BrowserRouter>

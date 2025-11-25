@@ -36,10 +36,10 @@ api.interceptors.response.use(
 export const authAPI = {
   login: (email: string, password: string) =>
     api.post<{ user: User; token: string }>('/auth/login', { email, password }),
-  
+
   register: (data: any) =>
     api.post<{ user: User; token: string }>('/auth/register', data),
-  
+
   getCurrentUser: () =>
     api.get<{ user: User }>('/auth/me')
 };
@@ -47,17 +47,17 @@ export const authAPI = {
 // Events API
 export const eventsAPI = {
   getAll: () => api.get<{ events: Event[] }>('/events'),
-  
+
   getById: (id: number) => api.get<{ event: Event }>(`/events/${id}`),
-  
+
   create: (data: Partial<Event>) => api.post<{ event: Event }>('/events', data),
-  
+
   update: (id: number, data: Partial<Event>) =>
     api.put<{ event: Event }>(`/events/${id}`, data),
-  
+
   getAthletes: (id: number) =>
     api.get<{ athletes: any[] }>(`/events/${id}/athletes`),
-  
+
   registerAthlete: (eventId: number, data: { athlete_id: number; apparatus_ids: number[] }) =>
     api.post(`/events/${eventId}/athletes`, data)
 };
@@ -65,11 +65,11 @@ export const eventsAPI = {
 // Athletes API
 export const athletesAPI = {
   getAll: () => api.get<{ athletes: Athlete[] }>('/athletes'),
-  
+
   getById: (id: number) => api.get<{ athlete: Athlete }>(`/athletes/${id}`),
-  
+
   create: (data: Partial<Athlete>) => api.post<{ athlete: Athlete }>('/athletes', data),
-  
+
   update: (id: number, data: Partial<Athlete>) =>
     api.put<{ athlete: Athlete }>(`/athletes/${id}`, data)
 };
@@ -86,23 +86,40 @@ export const scoringAPI = {
     api.get<{ performances: Performance[] }>(`/scoring/performances/event/${eventId}`, {
       params: { apparatus_id: apparatusId }
     }),
-  
+
   createPerformance: (data: any) =>
     api.post<{ performance: Performance }>('/scoring/performances', data),
-  
+
   submitScore: (data: ScoreSubmission) =>
     api.post<{ score: Score }>('/scoring/scores', data),
-  
+
   getScores: (performanceId: number) =>
     api.get<{ scores: Score[] }>(`/scoring/scores/performance/${performanceId}`),
-  
+
   getLeaderboard: (eventId: number, apparatusId?: number) =>
     api.get<{ leaderboard: any[] }>(`/scoring/leaderboard/${eventId}`, {
       params: { apparatus_id: apparatusId }
     }),
-  
+
   publishScores: (performanceIds: number[]) =>
     api.post('/scoring/publish', { performance_ids: performanceIds })
+};
+
+// Configuration API
+export const configAPI = {
+  getScoringRules: (discipline?: string, apparatusId?: number) =>
+    api.get<{ rules: any[] }>('/config/scoring-rules', {
+      params: { discipline, apparatus_id: apparatusId }
+    }),
+
+  updateScoringRule: (id: number, data: any) =>
+    api.put<{ rule: any }>(`/config/scoring-rules/${id}`, data),
+
+  getApparatusConfig: (id: number) =>
+    api.get<{ config: any }>(`/config/apparatus-config/${id}`),
+
+  updateApparatusConfig: (id: number, data: any) =>
+    api.put<{ config: any }>(`/config/apparatus-config/${id}`, data)
 };
 
 export default api;
