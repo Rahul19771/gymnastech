@@ -24,7 +24,7 @@ const httpServer = createServer(app);
 // Initialize Socket.IO
 const io = new SocketIOServer(httpServer, {
   cors: {
-    origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+    origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : ['http://localhost:5173', 'http://localhost:5174'],
     methods: ['GET', 'POST']
   }
 });
@@ -32,7 +32,7 @@ const io = new SocketIOServer(httpServer, {
 // Middleware
 app.use(helmet());
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+  origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : ['http://localhost:5173', 'http://localhost:5174'],
   credentials: true
 }));
 app.use(express.json());
@@ -66,25 +66,25 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 // Socket.IO connection handling
 io.on('connection', (socket) => {
   console.log('Client connected:', socket.id);
-  
+
   // Join event room
   socket.on('join:event', (eventId: number) => {
     socket.join(`event:${eventId}`);
     console.log(`Socket ${socket.id} joined event:${eventId}`);
   });
-  
+
   // Leave event room
   socket.on('leave:event', (eventId: number) => {
     socket.leave(`event:${eventId}`);
     console.log(`Socket ${socket.id} left event:${eventId}`);
   });
-  
+
   // Join apparatus room
   socket.on('join:apparatus', (eventId: number, apparatusId: number) => {
     socket.join(`event:${eventId}:apparatus:${apparatusId}`);
     console.log(`Socket ${socket.id} joined event:${eventId}:apparatus:${apparatusId}`);
   });
-  
+
   socket.on('disconnect', () => {
     console.log('Client disconnected:', socket.id);
   });

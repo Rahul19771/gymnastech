@@ -144,6 +144,61 @@ export const Athletes: React.FC = () => {
     );
   };
 
+  const firstNameRef = React.useRef<HTMLInputElement>(null);
+
+  const handleFocusForm = () => {
+    firstNameRef.current?.focus();
+    firstNameRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
+
+  // Date helpers
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: 100 }, (_, i) => currentYear - i);
+  const months = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+
+  const handleDateChange = (type: 'year' | 'month' | 'day', value: string) => {
+    const currentDob = formData.date_of_birth ? new Date(formData.date_of_birth) : new Date();
+    let year = currentDob.getFullYear();
+    let month = currentDob.getMonth();
+    let day = currentDob.getDate();
+
+    if (formData.date_of_birth) {
+      // If exists, parse it
+      const [y, m, d] = formData.date_of_birth.split('-').map(Number);
+      year = y;
+      month = m - 1; // 0-indexed
+      day = d;
+    } else {
+      // Default to something reasonable if empty
+      year = 2010;
+      month = 0;
+      day = 1;
+    }
+
+    if (type === 'year') year = parseInt(value);
+    if (type === 'month') month = parseInt(value);
+    if (type === 'day') day = parseInt(value);
+
+    // Validate day for month
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    if (day > daysInMonth) day = daysInMonth;
+
+    // Format YYYY-MM-DD
+    const formattedDate = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    setFormData(prev => ({ ...prev, date_of_birth: formattedDate }));
+  };
+
+  // Parse current DOB for controlled inputs
+  // Handle timezone issues by splitting string directly if possible, or just use UTC methods if string is YYYY-MM-DD
+  // The input type="date" uses YYYY-MM-DD.
+  const [dobYear, dobMonth, dobDay] = formData.date_of_birth
+    ? formData.date_of_birth.split('-').map(Number)
+    : [null, null, null];
+
+
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
@@ -154,10 +209,13 @@ export const Athletes: React.FC = () => {
           </p>
         </div>
         {canManage && (
-          <div className="inline-flex items-center space-x-2 text-primary-600 font-semibold">
+          <button
+            onClick={handleFocusForm}
+            className="inline-flex items-center space-x-2 text-primary-600 font-semibold hover:text-primary-700 transition-colors"
+          >
             <PlusCircle className="w-5 h-5" />
             <span>Add athletes directly from this page</span>
-          </div>
+          </button>
         )}
       </div>
 
@@ -177,6 +235,7 @@ export const Athletes: React.FC = () => {
               First Name *
             </label>
             <input
+              ref={firstNameRef}
               type="text"
               name="first_name"
               value={formData.first_name}
@@ -198,17 +257,41 @@ export const Athletes: React.FC = () => {
               required
             />
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
+          <div className="md:col-span-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
               Date of Birth
             </label>
-            <input
-              type="date"
-              name="date_of_birth"
-              value={formData.date_of_birth}
-              onChange={handleInputChange}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
-            />
+            <div className="grid grid-cols-3 gap-2">
+              <select
+                value={dobYear || ''}
+                onChange={(e) => handleDateChange('year', e.target.value)}
+                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+              >
+                <option value="" disabled>Year</option>
+                {years.map(year => (
+                  <option key={year} value={year}>{year}</option>
+                ))}
+              </select>
+              <select
+                value={dobMonth !== null ? dobMonth - 1 : ''}
+                onChange={(e) => handleDateChange('month', e.target.value)}
+                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+              >
+                <option value="" disabled>Month</option>
+                {months.map((month, idx) => (
+                  <option key={month} value={idx}>{month}</option>
+                ))}
+              </select>
+              <input
+                type="number"
+                min="1"
+                max="31"
+                placeholder="Day"
+                value={dobDay || ''}
+                onChange={(e) => handleDateChange('day', e.target.value)}
+                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+              />
+            </div>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700">
