@@ -268,20 +268,22 @@ export const EventDetail: React.FC = () => {
           </div>
         </Link>
 
-        <Link
-          to={`/events/${id}/judge`}
-          className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow border-2 border-transparent hover:border-primary-200"
-        >
-          <div className="flex items-center space-x-4">
-            <div className="bg-primary-100 p-3 rounded-lg">
-              <Users className="w-8 h-8 text-primary-600" />
+        {user?.role === 'judge' && (
+          <Link
+            to={`/events/${id}/judge`}
+            className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow border-2 border-transparent hover:border-primary-200"
+          >
+            <div className="flex items-center space-x-4">
+              <div className="bg-primary-100 p-3 rounded-lg">
+                <Users className="w-8 h-8 text-primary-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Judge Panel</h3>
+                <p className="text-gray-600 text-sm">Submit scores for performances</p>
+              </div>
             </div>
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900">Judge Panel</h3>
-              <p className="text-gray-600 text-sm">Submit scores for performances</p>
-            </div>
-          </div>
-        </Link>
+          </Link>
+        )}
       </div>
     </div>
   );

@@ -3,7 +3,7 @@ import { useParams, useSearchParams } from 'react-router-dom';
 import { eventsAPI, apparatusAPI, scoringAPI } from '../services/api';
 import { socketService } from '../services/socket';
 import type { Event, Apparatus, Performance, ScoreSubmission } from '../types';
-import { Save, AlertCircle } from 'lucide-react';
+import { Save, AlertCircle, Users } from 'lucide-react';
 
 export const JudgePanel: React.FC = () => {
   const { eventId } = useParams<{ eventId: string }>();
@@ -27,16 +27,19 @@ export const JudgePanel: React.FC = () => {
       socketService.connect();
       socketService.joinEvent(parseInt(eventId));
 
-      socketService.onScoreUpdate(() => {
+      const handleScoreUpdate = () => {
         loadPerformances();
-      });
-    }
+      };
 
-    return () => {
-      if (eventId) {
-        socketService.leaveEvent(parseInt(eventId));
-      }
-    };
+      socketService.onScoreUpdate(handleScoreUpdate);
+
+      return () => {
+        if (eventId) {
+          socketService.leaveEvent(parseInt(eventId));
+        }
+        socketService.offScoreUpdate(handleScoreUpdate);
+      };
+    }
   }, [eventId]);
 
   useEffect(() => {
@@ -163,9 +166,13 @@ export const JudgePanel: React.FC = () => {
           <h2 className="text-xl font-semibold text-gray-900 mb-4">Performances</h2>
 
           {performances.length === 0 ? (
-            <p className="text-gray-600 text-center py-8">
-              No performances for this apparatus yet
-            </p>
+            <div className="text-center py-12 border-2 border-dashed border-gray-200 rounded-lg">
+              <Users className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+              <h3 className="text-lg font-medium text-gray-900 mb-1">No Performances Found</h3>
+              <p className="text-gray-500 text-sm px-4">
+                No athletes are registered for this apparatus yet.
+              </p>
+            </div>
           ) : (
             <div className="space-y-3">
               {performances.map((perf) => (
@@ -189,10 +196,10 @@ export const JudgePanel: React.FC = () => {
                     {perf.final_score !== null && (
                       <div className="text-right">
                         <div className="text-lg font-bold text-primary-600">
-                          {perf.final_score?.toFixed(3)}
+                          {Number(perf.final_score)?.toFixed(3)}
                         </div>
                         <div className="text-xs text-gray-500">
-                          D: {perf.d_score?.toFixed(3)} E: {perf.e_score?.toFixed(3)}
+                          D: {Number(perf.d_score)?.toFixed(3)} E: {Number(perf.e_score)?.toFixed(3)}
                         </div>
                       </div>
                     )}
@@ -207,9 +214,13 @@ export const JudgePanel: React.FC = () => {
         <div className="bg-white rounded-lg shadow p-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">Submit Score</h2>
 
-          {!selectedPerformance ? (
-            <div className="text-center py-8 text-gray-600">
-              Select a performance to submit a score
+          {performances.length === 0 ? (
+            <div className="text-center py-12 text-gray-500 bg-gray-50 rounded-lg border border-gray-100">
+              <p>No performances available to score</p>
+            </div>
+          ) : !selectedPerformance ? (
+            <div className="text-center py-12 text-gray-500 bg-gray-50 rounded-lg border border-gray-100">
+              <p>Select a performance from the list to submit a score</p>
             </div>
           ) : (
             <form onSubmit={handleSubmitScore} className="space-y-6">
@@ -305,5 +316,3 @@ export const JudgePanel: React.FC = () => {
     </div>
   );
 };
-
-

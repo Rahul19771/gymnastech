@@ -5,6 +5,7 @@ import { Layout } from './components/Layout';
 import { Login } from './pages/Login';
 import { Dashboard } from './pages/Dashboard';
 import { JudgePanel } from './pages/JudgePanel';
+import { JudgeEvents } from './pages/JudgeEvents';
 import { Leaderboard } from './pages/Leaderboard';
 import { EventDetail } from './pages/EventDetail';
 import { EventForm } from './pages/EventForm';
@@ -14,6 +15,20 @@ import { Configuration } from './pages/Configuration';
 const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated } = useAuthStore();
   return isAuthenticated ? <>{children}</> : <Navigate to="/login" />;
+};
+
+const JudgeRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { isAuthenticated, user } = useAuthStore();
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" />;
+  }
+
+  if (user?.role !== 'judge') {
+    return <Navigate to="/" />;
+  }
+
+  return <>{children}</>;
 };
 
 function App() {
@@ -73,13 +88,24 @@ function App() {
         />
 
         <Route
+          path="/judge"
+          element={
+            <JudgeRoute>
+              <Layout>
+                <JudgeEvents />
+              </Layout>
+            </JudgeRoute>
+          }
+        />
+
+        <Route
           path="/events/:eventId/judge"
           element={
-            <PrivateRoute>
+            <JudgeRoute>
               <Layout>
                 <JudgePanel />
               </Layout>
-            </PrivateRoute>
+            </JudgeRoute>
           }
         />
 

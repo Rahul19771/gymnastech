@@ -13,7 +13,7 @@ router.get('/performances/event/:eventId', authenticate, async (req, res) => {
   try {
     const { eventId } = req.params;
     const { apparatus_id } = req.query;
-    
+
     let query = `
       SELECT 
         p.*,
@@ -33,18 +33,18 @@ router.get('/performances/event/:eventId', authenticate, async (req, res) => {
       LEFT JOIN final_scores fs ON p.id = fs.performance_id
       WHERE p.event_id = $1
     `;
-    
+
     const params: any[] = [eventId];
-    
+
     if (apparatus_id) {
       query += ' AND p.apparatus_id = $2';
       params.push(apparatus_id);
     }
-    
+
     query += ' ORDER BY p.order_number NULLS LAST, a.last_name';
-    
+
     const result = await pool.query(query, params);
-    
+
     res.json({ performances: result.rows });
   } catch (error) {
     console.error('Get performances error:', error);
@@ -67,10 +67,10 @@ router.post(
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
-    
+
     try {
       const { event_id, athlete_id, apparatus_id, order_number, video_url, notes } = req.body;
-      
+
       const result = await pool.query(
         `INSERT INTO performances (event_id, athlete_id, apparatus_id, order_number, video_url, notes)
          VALUES ($1, $2, $3, $4, $5, $6)
@@ -82,7 +82,7 @@ router.post(
          RETURNING *`,
         [event_id, athlete_id, apparatus_id, order_number || null, video_url || null, notes || null]
       );
-      
+
       res.status(201).json({ performance: result.rows[0] });
     } catch (error) {
       console.error('Create performance error:', error);
@@ -91,11 +91,11 @@ router.post(
   }
 );
 
-// Submit score (judge)
+// Submit score (judge only)
 router.post(
   '/scores',
   authenticate,
-  authorize('judge', 'admin'),
+  authorize('judge'),
   [
     body('performance_id').isInt(),
     body('score_type').isIn(['d_score', 'e_score']),
@@ -106,20 +106,20 @@ router.post(
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
-    
+
     try {
       const { performance_id, score_type, score_value, deductions, penalties, comments } = req.body;
-      
+
       // Verify performance exists
       const perfCheck = await pool.query(
         'SELECT id FROM performances WHERE id = $1',
         [performance_id]
       );
-      
+
       if (perfCheck.rows.length === 0) {
         return res.status(404).json({ error: 'Performance not found' });
       }
-      
+
       // Insert or update score
       const result = await pool.query(
         `INSERT INTO scores (performance_id, judge_id, score_type, score_value, deductions, penalties, comments)
@@ -141,9 +141,9 @@ router.post(
           comments || null
         ]
       );
-      
+
       const score = result.rows[0];
-      
+
       // Audit log
       await auditService.log({
         user_id: req.user!.id,
@@ -153,14 +153,14 @@ router.post(
         new_data: { performance_id, score_type, score_value },
         ip_address: req.ip
       });
-      
+
       // Trigger score calculation
       try {
         await scoringService.calculateFinalScore(performance_id);
       } catch (calcError) {
         console.error('Score calculation error:', calcError);
       }
-      
+
       res.status(201).json({ score });
     } catch (error) {
       console.error('Submit score error:', error);
@@ -173,7 +173,7 @@ router.post(
 router.get('/scores/performance/:performanceId', authenticate, async (req, res) => {
   try {
     const { performanceId } = req.params;
-    
+
     const result = await pool.query(
       `SELECT 
         s.*,
@@ -186,7 +186,7 @@ router.get('/scores/performance/:performanceId', authenticate, async (req, res) 
        ORDER BY s.score_type, s.submitted_at`,
       [performanceId]
     );
-    
+
     res.json({ scores: result.rows });
   } catch (error) {
     console.error('Get scores error:', error);
@@ -199,12 +199,12 @@ router.get('/leaderboard/:eventId', authenticate, async (req, res) => {
   try {
     const { eventId } = req.params;
     const { apparatus_id } = req.query;
-    
+
     const leaderboard = await scoringService.getLeaderboard(
       parseInt(eventId),
       apparatus_id ? parseInt(apparatus_id as string) : undefined
     );
-    
+
     res.json({ leaderboard });
   } catch (error) {
     console.error('Get leaderboard error:', error);
@@ -223,12 +223,12 @@ router.post(
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
-    
+
     try {
       const { performance_ids } = req.body;
-      
+
       await scoringService.publishScores(performance_ids);
-      
+
       // Audit log
       await auditService.log({
         user_id: req.user!.id,
@@ -237,7 +237,7 @@ router.post(
         new_data: { performance_ids },
         ip_address: req.ip
       });
-      
+
       res.json({ message: 'Scores published successfully' });
     } catch (error) {
       console.error('Publish scores error:', error);
