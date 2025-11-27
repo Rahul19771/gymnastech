@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Response } from 'express';
 import { body, validationResult } from 'express-validator';
 import pool from '../config/database';
 import { authenticate, authorize } from '../middleware/auth';
@@ -62,7 +62,7 @@ router.post(
     body('athlete_id').isInt(),
     body('apparatus_id').isInt()
   ],
-  async (req: AuthRequest, res) => {
+  async (req: AuthRequest, res: Response) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
@@ -83,10 +83,10 @@ router.post(
         [event_id, athlete_id, apparatus_id, order_number || null, video_url || null, notes || null]
       );
 
-      res.status(201).json({ performance: result.rows[0] });
+      return res.status(201).json({ performance: result.rows[0] });
     } catch (error) {
       console.error('Create performance error:', error);
-      res.status(500).json({ error: 'Failed to create performance' });
+      return res.status(500).json({ error: 'Failed to create performance' });
     }
   }
 );
@@ -101,7 +101,7 @@ router.post(
     body('score_type').isIn(['d_score', 'e_score']),
     body('score_value').isFloat({ min: 0 })
   ],
-  async (req: AuthRequest, res) => {
+  async (req: AuthRequest, res: Response) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
@@ -161,10 +161,10 @@ router.post(
         console.error('Score calculation error:', calcError);
       }
 
-      res.status(201).json({ score });
+      return res.status(201).json({ score });
     } catch (error) {
       console.error('Submit score error:', error);
-      res.status(500).json({ error: 'Failed to submit score' });
+      return res.status(500).json({ error: 'Failed to submit score' });
     }
   }
 );
@@ -218,7 +218,7 @@ router.post(
   authenticate,
   authorize('admin', 'official'),
   [body('performance_ids').isArray().notEmpty()],
-  async (req: AuthRequest, res) => {
+  async (req: AuthRequest, res: Response) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
@@ -238,10 +238,10 @@ router.post(
         ip_address: req.ip
       });
 
-      res.json({ message: 'Scores published successfully' });
+      return res.json({ message: 'Scores published successfully' });
     } catch (error) {
       console.error('Publish scores error:', error);
-      res.status(500).json({ error: 'Failed to publish scores' });
+      return res.status(500).json({ error: 'Failed to publish scores' });
     }
   }
 );
