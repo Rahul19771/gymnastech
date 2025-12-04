@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Response } from 'express';
 import { body, validationResult } from 'express-validator';
 import pool from '../config/database';
 import { authenticate, authorize } from '../middleware/auth';
@@ -7,14 +7,14 @@ import { AuthRequest } from '../types';
 const router = Router();
 
 // Get all athletes
-router.get('/', authenticate, async (req, res) => {
+router.get('/', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const result = await pool.query(
       `SELECT * FROM athletes
        WHERE is_active = true
        ORDER BY last_name, first_name`
     );
-    
+
     res.json({ athletes: result.rows });
   } catch (error) {
     console.error('Get athletes error:', error);
@@ -23,23 +23,23 @@ router.get('/', authenticate, async (req, res) => {
 });
 
 // Get single athlete
-router.get('/:id', authenticate, async (req, res) => {
+router.get('/:id', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    
+
     const result = await pool.query(
       'SELECT * FROM athletes WHERE id = $1',
       [id]
     );
-    
+
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Athlete not found' });
     }
-    
-    res.json({ athlete: result.rows[0] });
+
+    return res.json({ athlete: result.rows[0] });
   } catch (error) {
     console.error('Get athlete error:', error);
-    res.status(500).json({ error: 'Failed to retrieve athlete' });
+    return res.status(500).json({ error: 'Failed to retrieve athlete' });
   }
 });
 
@@ -55,26 +55,26 @@ router.post(
     body('country').optional().isLength({ min: 2, max: 3 }),
     body('registration_number').optional().trim()
   ],
-  async (req: AuthRequest, res) => {
+  async (req: AuthRequest, res: Response) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
-    
+
     try {
       const { first_name, last_name, date_of_birth, country, club, registration_number } = req.body;
-      
+
       const result = await pool.query(
         `INSERT INTO athletes (first_name, last_name, date_of_birth, country, club, registration_number)
          VALUES ($1, $2, $3, $4, $5, $6)
          RETURNING *`,
         [first_name, last_name, date_of_birth || null, country || null, club || null, registration_number || null]
       );
-      
-      res.status(201).json({ athlete: result.rows[0] });
+
+      return res.status(201).json({ athlete: result.rows[0] });
     } catch (error) {
       console.error('Create athlete error:', error);
-      res.status(500).json({ error: 'Failed to create athlete' });
+      return res.status(500).json({ error: 'Failed to create athlete' });
     }
   }
 );
@@ -84,11 +84,11 @@ router.put(
   '/:id',
   authenticate,
   authorize('admin', 'official'),
-  async (req: AuthRequest, res) => {
+  async (req: AuthRequest, res: Response) => {
     try {
       const { id } = req.params;
       const { first_name, last_name, date_of_birth, country, club, registration_number } = req.body;
-      
+
       const result = await pool.query(
         `UPDATE athletes
          SET first_name = COALESCE($1, first_name),
@@ -102,15 +102,15 @@ router.put(
          RETURNING *`,
         [first_name, last_name, date_of_birth, country, club, registration_number, id]
       );
-      
+
       if (result.rows.length === 0) {
         return res.status(404).json({ error: 'Athlete not found' });
       }
-      
-      res.json({ athlete: result.rows[0] });
+
+      return res.json({ athlete: result.rows[0] });
     } catch (error) {
       console.error('Update athlete error:', error);
-      res.status(500).json({ error: 'Failed to update athlete' });
+      return res.status(500).json({ error: 'Failed to update athlete' });
     }
   }
 );

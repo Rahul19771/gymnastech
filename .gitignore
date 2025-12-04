@@ -53,5 +53,6 @@ coverage/
 
 # Production
 *.tar.gz
-
+backend.sh
+frontend.sh
 

@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { configAPI, apparatusAPI } from '../services/api';
 import { useAuthStore } from '../stores/authStore';
-import { Dumbbell, ScrollText, AlertCircle } from 'lucide-react';
+import { Dumbbell, ScrollText, AlertCircle, Plus, Pencil, Trash2 } from 'lucide-react';
+import { ScoringRulesDisplay } from '../components/ScoringRulesDisplay';
+import { ScoringRuleForm } from '../components/ScoringRuleForm';
+import { ApparatusForm } from '../components/ApparatusForm';
 
 export const Configuration: React.FC = () => {
     const { user } = useAuthStore();
@@ -10,6 +13,10 @@ export const Configuration: React.FC = () => {
     const [rules, setRules] = useState<any[]>([]);
     const [apparatusList, setApparatusList] = useState<any[]>([]);
     const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [editingRule, setEditingRule] = useState<any>(null);
+    const [isApparatusModalOpen, setIsApparatusModalOpen] = useState(false);
+    const [editingApparatus, setEditingApparatus] = useState<any>(null);
 
     useEffect(() => {
         loadData();
@@ -19,8 +26,12 @@ export const Configuration: React.FC = () => {
         setLoading(true);
         try {
             if (activeTab === 'rules') {
-                const { data } = await configAPI.getScoringRules();
-                setRules(data.rules);
+                const [rulesRes, apparatusRes] = await Promise.all([
+                    configAPI.getScoringRules(),
+                    apparatusAPI.getAll()
+                ]);
+                setRules(rulesRes.data.rules);
+                setApparatusList(apparatusRes.data.apparatus);
             } else {
                 const { data } = await apparatusAPI.getAll();
                 setApparatusList(data.apparatus);
@@ -33,17 +44,87 @@ export const Configuration: React.FC = () => {
         }
     };
 
-    /*
-  const handleRuleUpdate = async (ruleId: number, updatedRules: any) => {
-    try {
-      await configAPI.updateScoringRule(ruleId, { rules: updatedRules });
-      setMessage({ type: 'success', text: 'Scoring rule updated successfully' });
-      loadData();
-    } catch (error) {
-      setMessage({ type: 'error', text: 'Failed to update scoring rule' });
-    }
-  };
-  */
+    const handleSaveRule = async (data: any) => {
+        try {
+            if (editingRule) {
+                await configAPI.updateScoringRule(editingRule.id, data);
+                setMessage({ type: 'success', text: 'Scoring rule updated successfully' });
+            } else {
+                await configAPI.createScoringRule(data);
+                setMessage({ type: 'success', text: 'Scoring rule created successfully' });
+            }
+            setIsModalOpen(false);
+            setEditingRule(null);
+            loadData();
+        } catch (error) {
+            console.error('Failed to save rule:', error);
+            setMessage({ type: 'error', text: 'Failed to save scoring rule' });
+        }
+    };
+
+    const handleDeleteRule = async (id: number) => {
+        if (!window.confirm('Are you sure you want to delete this scoring rule?')) return;
+
+        try {
+            await configAPI.deleteScoringRule(id);
+            setMessage({ type: 'success', text: 'Scoring rule deleted successfully' });
+            loadData();
+        } catch (error) {
+            console.error('Failed to delete rule:', error);
+            setMessage({ type: 'error', text: 'Failed to delete scoring rule' });
+        }
+    };
+
+    const openCreateModal = () => {
+        setEditingRule(null);
+        setIsModalOpen(true);
+    };
+
+    const openEditModal = (rule: any) => {
+        setEditingRule(rule);
+        setIsModalOpen(true);
+    };
+
+    const handleSaveApparatus = async (data: any) => {
+        try {
+            if (editingApparatus) {
+                await apparatusAPI.update(editingApparatus.id, data);
+                setMessage({ type: 'success', text: 'Apparatus updated successfully' });
+            } else {
+                await apparatusAPI.create(data);
+                setMessage({ type: 'success', text: 'Apparatus created successfully' });
+            }
+            setIsApparatusModalOpen(false);
+            setEditingApparatus(null);
+            loadData();
+        } catch (error) {
+            console.error('Failed to save apparatus:', error);
+            setMessage({ type: 'error', text: 'Failed to save apparatus' });
+        }
+    };
+
+    const handleDeleteApparatus = async (id: number) => {
+        if (!window.confirm('Are you sure you want to delete this apparatus?')) return;
+
+        try {
+            await apparatusAPI.delete(id);
+            setMessage({ type: 'success', text: 'Apparatus deleted successfully' });
+            loadData();
+        } catch (error) {
+            console.error('Failed to delete apparatus:', error);
+            setMessage({ type: 'error', text: 'Failed to delete apparatus' });
+        }
+    };
+
+    const openCreateApparatusModal = () => {
+        setEditingApparatus(null);
+        setIsApparatusModalOpen(true);
+    };
+
+    const openEditApparatusModal = (apparatus: any) => {
+        setEditingApparatus(apparatus);
+        setIsApparatusModalOpen(true);
+    };
 
     if (!user || user.role !== 'admin') {
         return (
@@ -60,6 +141,30 @@ export const Configuration: React.FC = () => {
                 <h1 className="text-3xl font-bold text-gray-900">Configuration</h1>
                 <p className="text-gray-600 mt-1">Manage system settings and scoring rules</p>
             </div>
+
+            {activeTab === 'rules' && (
+                <div className="flex justify-end">
+                    <button
+                        onClick={openCreateModal}
+                        className="flex items-center px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition-colors"
+                    >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Add Rule
+                    </button>
+                </div>
+            )}
+
+            {activeTab === 'apparatus' && (
+                <div className="flex justify-end">
+                    <button
+                        onClick={openCreateApparatusModal}
+                        className="flex items-center px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition-colors"
+                    >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Add Apparatus
+                    </button>
+                </div>
+            )}
 
             {/* Tabs */}
             <div className="bg-white rounded-lg shadow overflow-hidden">
@@ -123,21 +228,26 @@ export const Configuration: React.FC = () => {
                                             }`}>
                                             {rule.is_active ? 'Active' : 'Inactive'}
                                         </span>
+                                        <div className="flex space-x-2 ml-4">
+                                            <button
+                                                onClick={() => openEditModal(rule)}
+                                                className="p-1 text-gray-400 hover:text-primary-600 transition-colors"
+                                                title="Edit Rule"
+                                            >
+                                                <Pencil className="w-4 h-4" />
+                                            </button>
+                                            <button
+                                                onClick={() => handleDeleteRule(rule.id)}
+                                                className="p-1 text-gray-400 hover:text-red-600 transition-colors"
+                                                title="Delete Rule"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        </div>
                                     </div>
 
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-4 rounded-md">
-                                        <div>
-                                            <h4 className="font-medium text-gray-700 mb-2">D-Score Rules</h4>
-                                            <pre className="text-xs bg-white p-2 rounded border overflow-auto">
-                                                {JSON.stringify(rule.rules.d_score, null, 2)}
-                                            </pre>
-                                        </div>
-                                        <div>
-                                            <h4 className="font-medium text-gray-700 mb-2">E-Score Rules</h4>
-                                            <pre className="text-xs bg-white p-2 rounded border overflow-auto">
-                                                {JSON.stringify(rule.rules.e_score, null, 2)}
-                                            </pre>
-                                        </div>
+                                    <div className="mt-4">
+                                        <ScoringRulesDisplay rules={rule.rules} />
                                     </div>
                                 </div>
                             ))}
@@ -151,7 +261,23 @@ export const Configuration: React.FC = () => {
                                 <div key={app.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
                                     <div className="flex items-center justify-between mb-2">
                                         <h3 className="text-lg font-semibold text-gray-900">{app.name}</h3>
-                                        <span className="text-sm font-mono bg-gray-100 px-2 py-1 rounded">{app.code}</span>
+                                        <div className="flex items-center space-x-2">
+                                            <span className="text-sm font-mono bg-gray-100 px-2 py-1 rounded">{app.code}</span>
+                                            <button
+                                                onClick={() => openEditApparatusModal(app)}
+                                                className="p-1 text-gray-400 hover:text-primary-600 transition-colors"
+                                                title="Edit Apparatus"
+                                            >
+                                                <Pencil className="w-4 h-4" />
+                                            </button>
+                                            <button
+                                                onClick={() => handleDeleteApparatus(app.id)}
+                                                className="p-1 text-gray-400 hover:text-red-600 transition-colors"
+                                                title="Delete Apparatus"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        </div>
                                     </div>
                                     <p className="text-sm text-gray-600 mb-3">{app.description}</p>
                                     <div className="text-xs text-gray-500">
@@ -166,6 +292,21 @@ export const Configuration: React.FC = () => {
                     )}
                 </div>
             </div>
+            {isModalOpen && (
+                <ScoringRuleForm
+                    initialData={editingRule}
+                    apparatusList={apparatusList}
+                    onSave={handleSaveRule}
+                    onCancel={() => setIsModalOpen(false)}
+                />
+            )}
+            {isApparatusModalOpen && (
+                <ApparatusForm
+                    initialData={editingApparatus}
+                    onSave={handleSaveApparatus}
+                    onCancel={() => setIsApparatusModalOpen(false)}
+                />
+            )}
         </div>
     );
 };

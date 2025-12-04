@@ -7,45 +7,49 @@ export const authenticate = async (
   req: AuthRequest,
   res: Response,
   next: NextFunction
-) => {
+): Promise<void> => {
   try {
     const token = req.headers.authorization?.split(' ')[1];
-    
+
     if (!token) {
-      return res.status(401).json({ error: 'Authentication required' });
+      res.status(401).json({ error: 'Authentication required' });
+      return;
     }
-    
+
     const decoded = jwt.verify(
       token,
       process.env.JWT_SECRET || 'your_jwt_secret'
     ) as JWTPayload;
-    
+
     const result = await pool.query(
       'SELECT id, email, first_name, last_name, role, is_active FROM users WHERE id = $1',
       [decoded.userId]
     );
-    
+
     if (result.rows.length === 0 || !result.rows[0].is_active) {
-      return res.status(401).json({ error: 'Invalid or inactive user' });
+      res.status(401).json({ error: 'Invalid or inactive user' });
+      return;
     }
-    
+
     req.user = result.rows[0];
     next();
   } catch (error) {
-    return res.status(401).json({ error: 'Invalid token' });
+    res.status(401).json({ error: 'Invalid token' });
   }
 };
 
 export const authorize = (...roles: UserRole[]) => {
-  return (req: AuthRequest, res: Response, next: NextFunction) => {
+  return (req: AuthRequest, res: Response, next: NextFunction): void => {
     if (!req.user) {
-      return res.status(401).json({ error: 'Authentication required' });
+      res.status(401).json({ error: 'Authentication required' });
+      return;
     }
-    
+
     if (!roles.includes(req.user.role)) {
-      return res.status(403).json({ error: 'Insufficient permissions' });
+      res.status(403).json({ error: 'Insufficient permissions' });
+      return;
     }
-    
+
     next();
   };
 };

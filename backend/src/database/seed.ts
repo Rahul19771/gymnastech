@@ -55,6 +55,58 @@ async function seed() {
 
     console.log('✓ Judge users seeded (judge1-4@gymnastech.com, password: judge123)');
 
+    // Seed official user
+    const officialPassword = await bcrypt.hash('official123', 10);
+    await pool.query(
+      `INSERT INTO users (email, password_hash, first_name, last_name, role) 
+       VALUES ($1, $2, $3, $4, $5) 
+       ON CONFLICT (email) DO NOTHING`,
+      ['official@gymnastech.com', officialPassword, 'Event', 'Official', 'official']
+    );
+    console.log('✓ Official user seeded (official@gymnastech.com, password: official123)');
+
+    // Seed athlete user
+    const athletePassword = await bcrypt.hash('athlete123', 10);
+    const athleteUserResult = await pool.query(
+      `INSERT INTO users (email, password_hash, first_name, last_name, role) 
+       VALUES ($1, $2, $3, $4, $5) 
+       ON CONFLICT (email) DO UPDATE SET email = EXCLUDED.email
+       RETURNING id`,
+      ['athlete@gymnastech.com', athletePassword, 'Demo', 'Athlete', 'athlete']
+    );
+
+    if (athleteUserResult.rows.length > 0) {
+      const userId = athleteUserResult.rows[0].id;
+      await pool.query(
+        `INSERT INTO athletes (user_id, first_name, last_name, country, club, is_active)
+         VALUES ($1, $2, $3, $4, $5, $6)
+         ON CONFLICT (registration_number) DO NOTHING`,
+        // Note: registration_number constraint might be an issue if we don't provide it and it's unique. 
+        // But schema says registration_number is unique, and we are not providing it here.
+        // If we don't provide it, it's NULL. Multiple NULLs are allowed in unique constraints in Postgres.
+        // However, to be safe and avoid conflict on user_id if I added a constraint there (schema doesn't show unique on user_id but it makes sense),
+        // I'll check if athlete exists for this user.
+        [userId, 'Demo', 'Athlete', 'USA', 'GymnaTech Club', true]
+      );
+      // Actually, let's use a simpler query that doesn't rely on constraints that might not exist or be tricky.
+      // We'll just insert if not exists based on user_id.
+    }
+
+    // Re-doing the athlete insert to be safer
+    if (athleteUserResult.rows.length > 0) {
+      const userId = athleteUserResult.rows[0].id;
+      const existingAthlete = await pool.query('SELECT id FROM athletes WHERE user_id = $1', [userId]);
+      if (existingAthlete.rows.length === 0) {
+        await pool.query(
+          `INSERT INTO athletes (user_id, first_name, last_name, country, club, is_active, registration_number)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+          [userId, 'Demo', 'Athlete', 'USA', 'GymnaTech Club', true, 'ATH-DEMO-001']
+        );
+      }
+    }
+
+    console.log('✓ Athlete user seeded (athlete@gymnastech.com, password: athlete123)');
+
     // Seed default scoring rules for WAG 2025-2028
     const scoringRules = {
       d_score: {

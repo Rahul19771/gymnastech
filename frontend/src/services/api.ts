@@ -77,7 +77,16 @@ export const athletesAPI = {
 // Apparatus API
 export const apparatusAPI = {
   getAll: (discipline?: string) =>
-    api.get<{ apparatus: Apparatus[] }>('/apparatus', { params: { discipline } })
+    api.get<{ apparatus: Apparatus[] }>('/apparatus', { params: { discipline } }),
+
+  create: (data: Partial<Apparatus>) =>
+    api.post<{ apparatus: Apparatus }>('/apparatus', data),
+
+  update: (id: number, data: Partial<Apparatus>) =>
+    api.put<{ apparatus: Apparatus }>(`/apparatus/${id}`, data),
+
+  delete: (id: number) =>
+    api.delete(`/apparatus/${id}`)
 };
 
 // Scoring API
@@ -112,8 +121,14 @@ export const configAPI = {
       params: { discipline, apparatus_id: apparatusId }
     }),
 
+  createScoringRule: (data: any) =>
+    api.post<{ rule: any }>('/config/scoring-rules', data),
+
   updateScoringRule: (id: number, data: any) =>
     api.put<{ rule: any }>(`/config/scoring-rules/${id}`, data),
+
+  deleteScoringRule: (id: number) =>
+    api.delete(`/config/scoring-rules/${id}`),
 
   getApparatusConfig: (id: number) =>
     api.get<{ config: any }>(`/config/apparatus-config/${id}`),
