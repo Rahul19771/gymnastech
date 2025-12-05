@@ -3,8 +3,8 @@ FROM node:18-alpine
 WORKDIR /app
 # Copy package files
 COPY package*.json ./
-# Install dependencies
-RUN npm ci --only=production
+# Install dependencies (including dev dependencies for TypeScript build)
+RUN npm install
 # Copy source code
 COPY . .
 # Build TypeScript

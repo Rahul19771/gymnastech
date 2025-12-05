@@ -55,4 +55,4 @@ coverage/
 *.tar.gz
 backend.sh
 frontend.sh
-
+frontend_deploy.sh
